@@ -1,0 +1,5 @@
+SPDX-License-Identifier: CECILL-C
+
+Copyright (C) 2020- CentraleSupélec and contributors
+
+deepcs is available under the terms of the Cecill-C License (see Licence_CeCILL-C.txt).
