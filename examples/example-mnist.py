@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms
-import deepcs.training
+from deepcs.training import train
+from deepcs.testing import test
 
 
 class LinearNet(nn.Module):
@@ -32,10 +33,22 @@ train_loader = torch.utils.data.DataLoader(dataset=train_valid_dataset,
                                            shuffle=True,
                                            pin_memory=True,
                                            num_workers=num_workers)
+test_dataset = torchvision.datasets.FashionMNIST(root=dataset_dir,
+                                                 train=False,
+                                                 download=True,
+                                                 transform=torchvision.transforms.ToTensor())
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                          batch_size=batch_size,
+                                          shuffle=True,
+                                          pin_memory=True,
+                                          num_workers=num_workers)
 
 model = LinearNet(28*28, 10)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 metrics = {'CE': loss}
 
-deepcs.training.train(model, train_loader, loss, optimizer, device, metrics)
+train(model, train_loader, loss, optimizer, device, metrics)
+train_metrics = test(model, train_loader, device, metrics)
+test_metrics = test(model, test_loader, device, metrics)
+print(train_metrics, test_metrics)
