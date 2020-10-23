@@ -1,9 +1,16 @@
 """
 Utilitary functions for displaying informations in the terminal
 """
+
+# Standard modules
 import os
 import sys
 import time
+import operator
+import functools
+# External modules
+import torch
+from torch.nn.modules.module import _addindent
 
 _, term_width = os.popen('stty size', 'r').read().split()
 term_width = int(term_width)
@@ -79,4 +86,37 @@ def format_time(seconds):
     if f == '':
         f = '0ms'
     return f
+
+
+# https://stackoverflow.com/questions/42480111/model-summary-in-pytorch
+def torch_summarize(model, show_weights=True, show_parameters=True):
+    """Summarizes torch model by showing trainable parameters and weights."""
+    tmpstr = model.__class__.__name__ + ' (\n'
+    total_params = 0
+    for key, module in model._modules.items():
+        # if it contains layers let call it recursively to get params and weights
+        if type(module) in [
+            torch.nn.modules.container.Container,
+            torch.nn.modules.container.Sequential
+        ]:
+            modstr = torch_summarize(module)
+        else:
+            modstr = module.__repr__()
+        modstr = _addindent(modstr, 2)
+
+        params = sum([functools.reduce(operator.mul, p.size(), 1) for p in module.parameters()])
+        total_params += params
+        weights = tuple([tuple(p.size()) for p in module.parameters()])
+
+        tmpstr += '  (' + key + '): ' + modstr
+        if show_weights:
+            tmpstr += ', weights={}'.format(weights)
+        if show_parameters:
+            tmpstr +=  ', parameters={}'.format(params)
+        tmpstr += '\n'
+
+    tmpstr = tmpstr + ')'
+    tmpstr += '\n {} learnable parameters'.format(total_params)
+    return tmpstr
+
 

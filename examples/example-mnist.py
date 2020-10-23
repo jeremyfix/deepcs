@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms
+import deepcs.display
 from deepcs.training import train
 from deepcs.testing import test
 
@@ -47,6 +48,13 @@ model = LinearNet(28*28, 10)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 metrics = {'CE': loss}
+
+# Display information about the model
+print("Summary of the model architecture\n"+
+      "=================================\n" +
+      f"{deepcs.display.torch_summarize(model)}\n"
+     )
+
 
 train(model, train_loader, loss, optimizer, device, metrics)
 train_metrics = test(model, train_loader, device, metrics)
