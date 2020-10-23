@@ -68,3 +68,9 @@ def train(model: torch.nn.Module,
         # Display status
         metrics_msg = ",".join(f"{m_name}: {m_value/N:.4}" for(m_name, m_value) in tot_metrics.items())
         progress_bar(i, len(loader), msg = metrics_msg)
+
+    # Normalize the metrics over the whole dataset
+    for m_name, m_v in tot_metrics.items():
+        tot_metrics[m_name] = m_v / N
+
+    return tot_metrics
