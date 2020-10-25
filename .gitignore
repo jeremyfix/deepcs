@@ -1,0 +1,12 @@
+# Ignore vim swap files
+*.swp
+
+# Ignore __pycache__ 
+*/__pycache__
+dist/
+
+# Ignore python installation directories
+*egg-info*
+
+# Ignore logs saved by running the experiments
+*/logs/
