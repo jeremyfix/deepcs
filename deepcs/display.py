@@ -119,4 +119,5 @@ def torch_summarize(model, show_weights=True, show_parameters=True):
     tmpstr += '\n {} learnable parameters'.format(total_params)
     return tmpstr
 
-
+def htmlize(txt):
+    return txt.replace(' ', '&nbsp;').replace('\n', '  \n')
