@@ -73,4 +73,6 @@ def train(model: torch.nn.Module,
     for m_name, m_v in tot_metrics.items():
         tot_metrics[m_name] = m_v / N
 
+    print("Train metrics :     {}".format(" | ".join([f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()])))      
+
     return tot_metrics
