@@ -16,7 +16,8 @@ def train(model: torch.nn.Module,
           f_loss: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           device: torch.device,
-          metrics: Dict[str, Metric]):
+          metrics: Dict[str, Metric],
+          grad_clip = None):
     """
         Train a model for one epoch, iterating over the loader
         using the f_loss to compute the loss and the optimizer
@@ -63,6 +64,11 @@ def train(model: torch.nn.Module,
             model.penalty().backward()
         except AttributeError:
             pass
+
+        if grad_clip is not None:
+            torch.nn.utils.clip_grad_value_(model.parameters(),
+                                            clip_value=grad_clip)
+            
         optimizer.step()
 
         # Display status
