@@ -17,7 +17,8 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           device: torch.device,
           metrics: Dict[str, Metric],
-          grad_clip = None):
+          grad_clip = None,
+          num_model_args=1):
     """
         Train a model for one epoch, iterating over the loader
         using the f_loss to compute the loss and the optimizer
@@ -30,6 +31,8 @@ def train(model: torch.nn.Module,
         optimizer -- A torch.optim.Optimzer object
         device    -- A torch.device
         metrics
+        grad_clip
+        num_model_args
 
         Returns :
 
@@ -46,16 +49,23 @@ def train(model: torch.nn.Module,
         inputs, targets = inputs.to(device), targets.to(device)
 
         # Compute the forward propagation
-        outputs = model(inputs)
+        if num_model_args == 1:
+            outputs = model(inputs)
+        else:
+            outputs = model(inputs, targets)
 
         loss = f_loss(outputs, targets)
 
         # Accumulate the number of processed samples
-        N += inputs.shape[0]
+        if isinstance(inputs, torch.Tensor):
+            batch_size = inputs.shape[0]
+        elif isinstance(inputs, torch.nn.utils.rnn.PackedSequence):
+            batch_size = inputs.data.shape[0]  # considering batch_first
+        N += batch_size
 
         # For the metrics, we assumed to be averaged over the minibatch
         for m_name, m_f in metrics.items():
-            tot_metrics[m_name] += inputs.shape[0] * m_f(outputs, targets).item()
+            tot_metrics[m_name] += batch_size * m_f(outputs, targets).item()
 
         # Backward and optimize
         optimizer.zero_grad()
@@ -79,6 +89,6 @@ def train(model: torch.nn.Module,
     for m_name, m_v in tot_metrics.items():
         tot_metrics[m_name] = m_v / N
 
-    print("Train metrics :     {}".format(" | ".join([f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()])))      
+    print("Train metrics :     {}".format(" | ".join([f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()])))
 
     return tot_metrics
