@@ -1,11 +1,14 @@
 # coding: utf-8
 
-from typing import Any, Callable, Dict, List
-
+# Standard imports
+from typing import Any, Callable, Dict, List, Union
+from pathlib import Path
+# External imports
 import torch
 import torch.nn
 import torch.utils.data
 import torch.optim
+# Local imports
 from .display import progress_bar
 
 
@@ -105,3 +108,35 @@ def train(model: torch.nn.Module,
     print("Train metrics :     {}".format(" | ".join([f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()])))
 
     return tot_metrics
+
+
+class ModelCheckpoint(object):
+    """
+    Early stopping callback
+    """
+
+    def __init__(self,
+                 model: torch.nn.Module,
+                 savepath: Union[str, Path],
+                 min_is_best: bool =True) -> None:
+        self.model = model
+        self.savepath = savepath
+        self.best_score = None
+        if min_is_best:
+            self.is_better = self.lower_is_better
+        else:
+            self.is_better = self.higher_is_better
+
+    def lower_is_better(self, score):
+        return self.best_score is None or score < self.best_score
+
+    def higher_is_better(self, score):
+        return self.best_score is None or score > self.best_score
+
+    def update(self, score):
+        if self.is_better(score):
+            torch.save(self.model.state_dict(),
+                       self.savepath)
+            self.best_score = score
+            return True
+        return False

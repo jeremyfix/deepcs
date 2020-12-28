@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torchvision.transforms
 import deepcs.display
-from deepcs.training import train
+from deepcs.training import train, ModelCheckpoint
 from deepcs.testing import test
 from deepcs.fileutils import generate_unique_logpath
 from deepcs.metrics import accuracy
@@ -73,6 +73,8 @@ print(summary_text)
 tensorboard_writer   = SummaryWriter(log_dir = logdir)
 tensorboard_writer.add_text("Experiment summary", deepcs.display.htmlize(summary_text))
 
+model_checkpoint = ModelCheckpoint(model, os.path.join(logdir, 'best_model.pt'))
+
 # Train
 for e in range(n_epochs):
 
@@ -81,6 +83,12 @@ for e in range(n_epochs):
     # Compute the metrics
     train_metrics = test(model, train_loader, device, metrics)
     test_metrics = test(model, test_loader, device, metrics)
+    updated = model_checkpoint.update(test_metrics['CE'])
+    print("[%d/%d] Test:   Loss : %.3f | Acc : %.3f%% %s"% (e,
+                                                         n_epochs,
+                                                         test_metrics['CE'],
+                                                         100.*test_metrics['accuracy'],
+                                                         "[>> BETTER <<]" if updated else ""))
 
     # Write the metrics to the tensorboard
     for m_name, m_value in train_metrics.items():
