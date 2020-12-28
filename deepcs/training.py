@@ -17,8 +17,10 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           device: torch.device,
           metrics: Dict[str, Metric],
-          grad_clip = None,
-          num_model_args=1):
+          grad_clip=None,
+          num_model_args=1,
+          num_epoch: int= 0,
+          tensorboard_writer=None):
     """
         Train a model for one epoch, iterating over the loader
         using the f_loss to compute the loss and the optimizer
@@ -33,6 +35,9 @@ def train(model: torch.nn.Module,
         metrics
         grad_clip
         num_model_args
+        num_epoch -- The number of this epoch, used for determining
+                     the current epoch for the tensorboard writer
+        tensorboard_writer
 
         Returns :
 
@@ -43,6 +48,9 @@ def train(model: torch.nn.Module,
     model.train()
     N = 0
     tot_metrics = {m_name: 0. for m_name in metrics}
+
+    # Get the total number of minibatches, i.e. of sub epochs
+    tot_epoch = len(loader)
 
     for i, (inputs, targets) in enumerate(loader):
 
@@ -78,12 +86,17 @@ def train(model: torch.nn.Module,
         if grad_clip is not None:
             torch.nn.utils.clip_grad_value_(model.parameters(),
                                             clip_value=grad_clip)
-            
+
         optimizer.step()
 
         # Display status
         metrics_msg = ",".join(f"{m_name}: {m_value/N:.4}" for(m_name, m_value) in tot_metrics.items())
         progress_bar(i, len(loader), msg = metrics_msg)
+
+        # Write the metrics on the tensorboard if one is provided
+        if tensorboard_writer is not None:
+            for m_name, m_value in tot_metrics.items():
+                tensorboard_writer.add_scalar(f'metrics/train_{m_name}', m_value/N, (i+1)/tot_epoch)
 
     # Normalize the metrics over the whole dataset
     for m_name, m_v in tot_metrics.items():
