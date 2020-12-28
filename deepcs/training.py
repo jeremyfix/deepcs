@@ -96,7 +96,7 @@ def train(model: torch.nn.Module,
         # Write the metrics on the tensorboard if one is provided
         if tensorboard_writer is not None:
             for m_name, m_value in tot_metrics.items():
-                tensorboard_writer.add_scalar(f'metrics/train_{m_name}', m_value/N, (i+1)/tot_epoch)
+                tensorboard_writer.add_scalar(f'metrics/train_{m_name}', m_value/N, num_epoch + (i+1)/tot_epoch)
 
     # Normalize the metrics over the whole dataset
     for m_name, m_v in tot_metrics.items():
