@@ -14,7 +14,8 @@ Metric = Callable[[Any, Any], float]
 def test(model: torch.nn.Module,
          loader: torch.utils.data.DataLoader,
          device: torch.device,
-         metrics: Dict[str, Metric]):
+         metrics: Dict[str, Metric],
+         num_model_args: int=1):
     """
     Test a model by iterating over the loader
 
@@ -43,14 +44,22 @@ def test(model: torch.nn.Module,
 
             inputs, targets = inputs.to(device), targets.to(device)
 
-            outputs = model(inputs)
+            # Compute the forward propagation
+            if num_model_args == 1:
+                outputs = model(inputs)
+            else:
+                outputs = model(inputs, targets)
 
             # Accumulate the number of processed samples
-            N += inputs.shape[0]
+            if isinstance(inputs, torch.Tensor):
+                batch_size = inputs.shape[0]
+            elif isinstance(inputs, torch.nn.utils.rnn.PackedSequence):
+                batch_size = inputs.data.shape[0]  # considering batch_first
+            N += batch_size
 
             # For the metrics, we assumed to be averaged over the minibatch
             for m_name, m_f in metrics.items():
-                tot_metrics[m_name] += inputs.shape[0] * m_f(outputs, targets).item()
+                tot_metrics[m_name] += batch_size * m_f(outputs, targets).item()
     for m_name, m_v in tot_metrics.items():
         tot_metrics[m_name] = m_v / N
     return tot_metrics
