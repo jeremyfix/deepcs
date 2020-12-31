@@ -54,7 +54,9 @@ def test(model: torch.nn.Module,
             if isinstance(inputs, torch.Tensor):
                 batch_size = inputs.shape[0]
             elif isinstance(inputs, torch.nn.utils.rnn.PackedSequence):
-                batch_size = inputs.data.shape[0]  # considering batch_first
+                # The minibatch size can be obtained as the number of samples for
+                # the first time sample
+                batch_size = inputs.batch_sizes[0]
             N += batch_size
 
             # For the metrics, we assumed to be averaged over the minibatch
