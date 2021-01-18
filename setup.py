@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from pkg_resources import parse_version
 from configparser import ConfigParser
 import setuptools,re,sys
