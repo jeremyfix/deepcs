@@ -1,11 +1,16 @@
 # coding: utf-8
 
+# Standard imports
 import os
+import functools
+import operator
+# External imports
 import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torchvision.transforms
+# Local imports
 import deepcs.display
 from deepcs.training import train, ModelCheckpoint
 from deepcs.testing import test
@@ -16,12 +21,48 @@ from deepcs.metrics import accuracy
 class LinearNet(nn.Module):
     def __init__(self, input_size, num_classes):
         super(LinearNet, self).__init__()
-        self.classifier = nn.Linear(input_size, num_classes)
+        self.classifier = nn.Linear(functools.reduce(operator.mul, input_size),
+                                    num_classes)
 
     def forward(self, x):
         x = x.view(x.size()[0], -1)
         y = self.classifier(x)
         return y
+
+def conv_relu_maxpool(dim_in, dim_out):
+    return [nn.Conv2d(dim_in, dim_out, kernel_size=3, padding=1),
+            nn.BatchNorm2d(dim_out),
+            nn.ReLU(),
+            nn.Conv2d(dim_out, dim_out, kernel_size=3, padding=1),
+            nn.BatchNorm2d(dim_out),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2)]
+
+class ConvNet(nn.Module):
+    def __init__(self, input_size, num_classes):
+        super(ConvNet, self).__init__()
+        conv_classifier = nn.Sequential(
+            *conv_relu_maxpool(1, 12),
+            *conv_relu_maxpool(12, 24)
+        )
+        dummy_tensor = torch.zeros(1, *input_size)
+        output = conv_classifier(dummy_tensor)
+
+        fc_classifier = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(functools.reduce(operator.mul, output.shape[1:]), 32),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(32, num_classes)
+        )
+        self.classifier = nn.Sequential(
+            conv_classifier,
+            nn.Flatten(),
+            fc_classifier
+        )
+
+    def forward(self, x):
+        return self.classifier(x)
 
 
 # Parameters
@@ -54,7 +95,8 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                           num_workers=num_workers)
 
 # Model
-model = LinearNet(28*28, 10)
+# model = LinearNet((1, 28, 28), 10)
+model = ConvNet((1, 28, 28), 10)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 metrics = {
