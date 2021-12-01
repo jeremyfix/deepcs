@@ -23,7 +23,8 @@ def train(model: torch.nn.Module,
           grad_clip=None,
           num_model_args=1,
           num_epoch: int= 0,
-          tensorboard_writer=None):
+          tensorboard_writer=None,
+          dynamic_display=True):
     """
         Train a model for one epoch, iterating over the loader
         using the f_loss to compute the loss and the optimizer
@@ -97,7 +98,8 @@ def train(model: torch.nn.Module,
 
         # Display status
         metrics_msg = ",".join(f"{m_name}: {m_value/N:.4}" for(m_name, m_value) in tot_metrics.items())
-        progress_bar(i, len(loader), msg = metrics_msg)
+        if dynamic_display:
+            progress_bar(i, len(loader), msg = metrics_msg)
 
         # Write the metrics on the tensorboard if one is provided
         if tensorboard_writer is not None:
