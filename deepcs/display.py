@@ -13,8 +13,11 @@ import torch
 from torch.nn.modules.module import _addindent
 import torchinfo.torchinfo as torchinfo
 
-_, term_width = os.popen('stty size', 'r').read().split()
-term_width = int(term_width)
+try:
+    _, term_width = os.popen('stty size', 'r').read().split()
+    term_width = int(term_width)
+except ValueError:
+    term_width = 80
 
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
