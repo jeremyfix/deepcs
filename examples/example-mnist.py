@@ -95,8 +95,9 @@ test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                           num_workers=num_workers)
 
 # Model
-# model = LinearNet((1, 28, 28), 10)
-model = ConvNet((1, 28, 28), 10)
+input_size=(1, 28, 28)
+# model = LinearNet(input_size, 10)
+model = ConvNet(input_size, 10)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 metrics = {
@@ -107,7 +108,7 @@ metrics = {
 # Display information about the model
 summary_text = "Summary of the model architecture\n"+ \
         "=================================\n" + \
-        f"{deepcs.display.torch_summarize(model)}\n"
+        f"{deepcs.display.torch_summarize(model, (batch_size, ) + input_size)}\n"
 
 print(summary_text)
 

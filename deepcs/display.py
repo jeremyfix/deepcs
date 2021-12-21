@@ -92,9 +92,9 @@ def format_time(seconds):
     return f
 
 
-def torch_summarize(model):
+def torch_summarize(model, input_size=None):
     """Summarizes torch model by showing trainable parameters and weights."""
-    return torchinfo.summary(model, verbose=0)
+    return torchinfo.summary(model, verbose=0, input_size=input_size)
 
 def htmlize(txt):
     return txt.replace(' ', '&nbsp;').replace('\n', '  \n')
