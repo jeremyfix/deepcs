@@ -3,47 +3,54 @@
 # Standard imports
 from typing import Any, Callable, Dict, List, Union
 from pathlib import Path
+
 # External imports
 import torch
 import torch.nn
 import torch.utils.data
 import torch.optim
+
 # Local imports
 from .display import progress_bar
 
 
 Metric = Callable[[Any, Any], float]
 
-def train(model: torch.nn.Module,
-          loader: torch.utils.data.DataLoader,
-          f_loss: torch.nn.Module,
-          optimizer: torch.optim.Optimizer,
-          device: torch.device,
-          metrics: Dict[str, Metric],
-          grad_clip=None,
-          num_model_args=1,
-          num_epoch: int= 0,
-          tensorboard_writer=None,
-          dynamic_display=True):
+
+def train(
+    model: torch.nn.Module,
+    loader: torch.utils.data.DataLoader,
+    f_loss: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+    metrics: Dict[str, Metric],
+    batch_metrics={},
+    grad_clip=None,
+    num_model_args=1,
+    num_epoch: int = 0,
+    tensorboard_writer=None,
+    dynamic_display=True,
+):
     """
-        Train a model for one epoch, iterating over the loader
-        using the f_loss to compute the loss and the optimizer
-        to update the parameters of the model.
+    Train a model for one epoch, iterating over the loader
+    using the f_loss to compute the loss and the optimizer
+    to update the parameters of the model.
 
-        Arguments :
-        model     -- A torch.nn.Module object
-        loader    -- A torch.utils.data.DataLoader
-        f_loss    -- The loss function, i.e. a loss Module
-        optimizer -- A torch.optim.Optimzer object
-        device    -- A torch.device
-        metrics
-        grad_clip
-        num_model_args
-        num_epoch -- The number of this epoch, used for determining
-                     the current epoch for the tensorboard writer
-        tensorboard_writer
+    Arguments :
+    model     -- A torch.nn.Module object
+    loader    -- A torch.utils.data.DataLoader
+    f_loss    -- The loss function, i.e. a loss Module
+    optimizer -- A torch.optim.Optimzer object
+    device    -- A torch.device
+    metrics
+    batch_metrics
+    grad_clip
+    num_model_args
+    num_epoch -- The number of this epoch, used for determining
+                 the current epoch for the tensorboard writer
+    tensorboard_writer
 
-        Returns :
+    Returns :
 
     """
 
@@ -51,7 +58,9 @@ def train(model: torch.nn.Module,
     # but is important for layers such as dropout, batchnorm, ...
     model.train()
     N = 0
-    tot_metrics = {m_name: 0. for m_name in metrics}
+    tot_metrics = {m_name: 0.0 for m_name in metrics}
+    for bname, bm in batch_metrics.items():
+        bm.reset()
 
     # Get the total number of minibatches, i.e. of sub epochs
     tot_epoch = len(loader)
@@ -81,6 +90,10 @@ def train(model: torch.nn.Module,
         for m_name, m_f in metrics.items():
             tot_metrics[m_name] += batch_size * m_f(outputs, targets).item()
 
+        # Update the batch metrics as well
+        for bname, bm in batch_metrics.items():
+            bm(outputs, targets)
+
         # Backward and optimize
         optimizer.zero_grad()
         loss.backward()
@@ -90,27 +103,45 @@ def train(model: torch.nn.Module,
             pass
 
         if grad_clip is not None:
-            gradnorm = torch.nn.utils.clip_grad_norm_(model.parameters(),
-                                                      max_norm=grad_clip)
-            tensorboard_writer.add_scalar(f'grad/norm', gradnorm, num_epoch + (i+1)/tot_epoch)
+            gradnorm = torch.nn.utils.clip_grad_norm_(
+                model.parameters(), max_norm=grad_clip
+            )
+            tensorboard_writer.add_scalar(
+                f"grad/norm", gradnorm, num_epoch + (i + 1) / tot_epoch
+            )
 
         optimizer.step()
 
         # Display status
-        metrics_msg = ",".join(f"{m_name}: {m_value/N:.4}" for(m_name, m_value) in tot_metrics.items())
+        metrics_msg = ",".join(
+            f"{m_name}: {m_value/N:.4}" for (m_name, m_value) in tot_metrics.items()
+        )
         if dynamic_display:
-            progress_bar(i, len(loader), msg = metrics_msg)
+            progress_bar(i, len(loader), msg=metrics_msg)
 
         # Write the metrics on the tensorboard if one is provided
         if tensorboard_writer is not None:
             for m_name, m_value in tot_metrics.items():
-                tensorboard_writer.add_scalar(f'metrics/train_{m_name}', m_value/N, num_epoch + (i+1)/tot_epoch)
+                tensorboard_writer.add_scalar(
+                    f"metrics/train_{m_name}",
+                    m_value / N,
+                    num_epoch + (i + 1) / tot_epoch,
+                )
 
     # Normalize the metrics over the whole dataset
     for m_name, m_v in tot_metrics.items():
         tot_metrics[m_name] = m_v / N
 
-    print("Train metrics :     {}".format(" | ".join([f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()])))
+    # And compute the value of the batch metrics
+    for bname, bm in batch_metrics.items():
+        tot_metrics[bname] = bm.get_value()
+    print(
+        "Train metrics :     {}".format(
+            " | ".join(
+                [f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()]
+            )
+        )
+    )
 
     return tot_metrics
 
@@ -120,10 +151,12 @@ class ModelCheckpoint(object):
     Early stopping callback
     """
 
-    def __init__(self,
-                 model: torch.nn.Module,
-                 savepath: Union[str, Path],
-                 min_is_best: bool =True) -> None:
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        savepath: Union[str, Path],
+        min_is_best: bool = True,
+    ) -> None:
         self.model = model
         self.savepath = savepath
         self.best_score = None
@@ -140,8 +173,7 @@ class ModelCheckpoint(object):
 
     def update(self, score):
         if self.is_better(score):
-            torch.save(self.model.state_dict(),
-                       self.savepath)
+            torch.save(self.model.state_dict(), self.savepath)
             self.best_score = score
             return True
         return False
