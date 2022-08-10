@@ -1,5 +1,7 @@
 # Deepcs package
 
+The package can be installed with pip, see the [pypi page](https://pypi.org/project/deepcs/)
+
 This package is used within the deeplearning labs at CentraleSupélec you can access on [this page](https://github.com/jeremyfix/deeplearning-lectures).
 
 It provides some handy high level functions :
