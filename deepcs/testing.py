@@ -6,16 +6,18 @@ import torch
 import torch.nn
 import torch.utils.data
 import torch.optim
-from .display import progress_bar
 
 
 Metric = Callable[[Any, Any], float]
 
-def test(model: torch.nn.Module,
-         loader: torch.utils.data.DataLoader,
-         device: torch.device,
-         metrics: Dict[str, Metric],
-         num_model_args: int=1):
+
+def test(
+    model: torch.nn.Module,
+    loader: torch.utils.data.DataLoader,
+    device: torch.device,
+    metrics: Dict[str, Metric],
+    num_model_args: int = 1,
+):
     """
     Test a model by iterating over the loader
 
@@ -31,6 +33,8 @@ def test(model: torch.nn.Module,
         A dictionnary with the averaged metrics over the data
 
     """
+    for bname, bm in metrics.items():
+        bm.reset()
     # We disable gradient computation which speeds up the computation
     # and reduces the memory usage
     with torch.no_grad():
@@ -38,7 +42,7 @@ def test(model: torch.nn.Module,
         # but is important with layers such as dropout, batchnorm, ..
         model.eval()
         N = 0
-        tot_metrics = {m_name: 0. for m_name in metrics}
+        tot_metrics = {m_name: 0.0 for m_name in metrics}
 
         for i, (inputs, targets) in enumerate(loader):
 
@@ -59,9 +63,11 @@ def test(model: torch.nn.Module,
                 batch_size = inputs.batch_sizes[0]
             N += batch_size
 
-            # For the metrics, we assumed to be averaged over the minibatch
-            for m_name, m_f in metrics.items():
-                tot_metrics[m_name] += batch_size * m_f(outputs, targets).item()
-    for m_name, m_v in tot_metrics.items():
-        tot_metrics[m_name] = m_v / N
+            # Update the metrics
+            for bname, bm in metrics.items():
+                bm(outputs, targets)
+    # Compute the value of the batch metrics
+    tot_metrics = {}
+    for bname, bm in metrics.items():
+        tot_metrics[bname] = bm.get_value()
     return tot_metrics

@@ -34,6 +34,9 @@ class GenericBatchMetric:
     def __str__(self):
         return f"{self.get_value():.3f}"
 
+    def tensorboard_write(self, writer, prefix, global_step):
+        writer.add_scalar(prefix, self.get_value(), global_step)
+
 
 def BatchCE():
     return GenericBatchMetric(nn.CrossEntropyLoss(reduction="mean"))
@@ -103,6 +106,11 @@ class BatchF1:
 
     def __str__(self):
         return ",".join(f"{val:.2f}" for val in self.get_value())
+
+    def tensorboard_write(self, writer, prefix, global_step):
+        writer.add_scalar(
+            prefix + "_macro", sum(self.get_value()) / self.num_classes, global_step
+        )
 
 
 def accuracy(probabilities, targets):

@@ -23,7 +23,6 @@ def train(
     f_loss: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
-    metrics: Dict[str, Metric],
     batch_metrics={},
     grad_clip=None,
     num_model_args=1,
@@ -42,7 +41,6 @@ def train(
     f_loss    -- The loss function, i.e. a loss Module
     optimizer -- A torch.optim.Optimzer object
     device    -- A torch.device
-    metrics
     batch_metrics
     grad_clip
     num_model_args
@@ -58,7 +56,6 @@ def train(
     # but is important for layers such as dropout, batchnorm, ...
     model.train()
     N = 0
-    tot_metrics = {m_name: 0.0 for m_name in metrics}
     for bname, bm in batch_metrics.items():
         bm.reset()
 
@@ -86,11 +83,7 @@ def train(
             batch_size = inputs.batch_sizes[0]
         N += batch_size
 
-        # For the metrics, we assumed to be averaged over the minibatch
-        for m_name, m_f in metrics.items():
-            tot_metrics[m_name] += batch_size * m_f(outputs, targets).item()
-
-        # Update the batch metrics as well
+        # Update the metrics
         for bname, bm in batch_metrics.items():
             bm(outputs, targets)
 
@@ -107,7 +100,7 @@ def train(
                 model.parameters(), max_norm=grad_clip
             )
             tensorboard_writer.add_scalar(
-                f"grad/norm", gradnorm, num_epoch + (i + 1) / tot_epoch
+                "grad/norm", gradnorm, num_epoch + (i + 1) / tot_epoch
             )
 
         optimizer.step()
@@ -115,37 +108,32 @@ def train(
         # Display status
         if dynamic_display:
             metrics_msg = " | ".join(
-                f"{m_name}: {m_value/N:.4f}"
-                for (m_name, m_value) in tot_metrics.items()
-            )
-            if len(batch_metrics) != 0:
-                metrics_msg += " | "
-            metrics_msg += " | ".join(
                 f"{bname}: {bm}" for (bname, bm) in batch_metrics.items()
             )
             progress_bar(i, len(loader), msg=metrics_msg)
 
         # Write the metrics on the tensorboard if one is provided
-        if tensorboard_writer is not None:
-            for m_name, m_value in tot_metrics.items():
-                tensorboard_writer.add_scalar(
-                    f"metrics/train_{m_name}",
-                    m_value / N,
-                    num_epoch + (i + 1) / tot_epoch,
-                )
+        # This is not working as expected
+        # as these may call add_scalar which is not expecting
+        # a fractional global step
 
-    # Normalize the metrics over the whole dataset
-    for m_name, m_v in tot_metrics.items():
-        tot_metrics[m_name] = m_v / N
+        # if tensorboard_writer is not None:
+        #     for bname, bm in batch_metrics.items():
+        #         bm.tensorboard_write(
+        #             tensorboard_writer,
+        #             f"metrics/train_{bname}",
+        #             num_epoch + (i + 1) / tot_epoch,
+        #         )
 
-    # And compute the value of the batch metrics
+    # Compute the value of the batch metrics
+    tot_metrics = {}
     for bname, bm in batch_metrics.items():
         tot_metrics[bname] = bm.get_value()
 
     metrics_msg = "\n  ".join(
         f"{m_name}: {m_value}" for (m_name, m_value) in tot_metrics.items()
     )
-    print(f"Train metrics : \n  {metrics_msg}")
+    print(f"Sliding window train metrics: \n  {metrics_msg}")
 
     return tot_metrics
 

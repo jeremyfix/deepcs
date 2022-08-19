@@ -17,7 +17,7 @@ import deepcs.display
 from deepcs.training import train, ModelCheckpoint
 from deepcs.testing import test
 from deepcs.fileutils import generate_unique_logpath
-from deepcs.metrics import accuracy, BatchF1
+from deepcs.metrics import BatchAccuracy, BatchCE, BatchF1
 
 
 class LinearNet(nn.Module):
@@ -75,6 +75,7 @@ n_epochs = 30
 learning_rate = 0.01
 device = torch.device("cpu")
 logdir = generate_unique_logpath("./logs", "linear")
+print(f"Logging into {logdir}")
 
 # Datasets
 train_valid_dataset = torchvision.datasets.MNIST(
@@ -110,8 +111,8 @@ input_size = (1, 28, 28)
 model = ConvNet(input_size, 10)
 loss = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-metrics = {"CE": loss, "accuracy": accuracy}
-batch_metrics = {"F1": BatchF1()}
+train_fmetrics = {"CE": BatchCE(), "accuracy": BatchAccuracy(), "F1": BatchF1()}
+test_fmetrics = {"CE": BatchCE(), "accuracy": BatchAccuracy(), "F1": BatchF1()}
 
 # Display information about the model
 summary_text = (
@@ -131,25 +132,35 @@ model_checkpoint = ModelCheckpoint(model, os.path.join(logdir, "best_model.pt"))
 # Train
 for e in range(n_epochs):
 
-    train(model, train_loader, loss, optimizer, device, metrics, batch_metrics)
-
-    # Compute the metrics
-    train_metrics = test(model, train_loader, device, metrics)
-    test_metrics = test(model, test_loader, device, metrics)
-    updated = model_checkpoint.update(test_metrics["CE"])
-    print(
-        "[%d/%d] Test:   Loss : %.3f | Acc : %.3f%% %s"
-        % (
-            e,
-            n_epochs,
-            test_metrics["CE"],
-            100.0 * test_metrics["accuracy"],
-            "[>> BETTER <<]" if updated else "",
-        )
+    train(
+        model,
+        train_loader,
+        loss,
+        optimizer,
+        device,
+        train_fmetrics,
+        tensorboard_writer=tensorboard_writer,
     )
 
-    # Write the metrics to the tensorboard
-    for m_name, m_value in train_metrics.items():
-        tensorboard_writer.add_scalar(f"metrics/train_{m_name}", m_value, e)
-    for m_name, m_value in test_metrics.items():
-        tensorboard_writer.add_scalar(f"metrics/test_{m_name}", m_value, e)
+    # Compute the metrics
+    train_metrics = test(model, train_loader, device, test_fmetrics)
+    for bname, bm in test_fmetrics.items():
+        bm.tensorboard_write(tensorboard_writer, f"metrics/train_{bname}", e)
+    metrics_msg = f"[{e}/{n_epochs}] Train : \n  "
+    metrics_msg += "\n  ".join(
+        f" {m_name}: {m_value}" for (m_name, m_value) in train_metrics.items()
+    )
+    print(metrics_msg)
+
+    test_metrics = test(model, test_loader, device, test_fmetrics)
+    for bname, bm in test_fmetrics.items():
+        bm.tensorboard_write(tensorboard_writer, f"metrics/test_{bname}", e)
+
+    updated = model_checkpoint.update(test_metrics["CE"])
+    metrics_msg = f"[{e}/{n_epochs}] Test : \n  "
+    metrics_msg += "\n  ".join(
+        f" {m_name}: {m_value}"
+        + ("[>> BETTER <<]" if updated and m_name == "CE" else "")
+        for (m_name, m_value) in test_metrics.items()
+    )
+    print(metrics_msg)
