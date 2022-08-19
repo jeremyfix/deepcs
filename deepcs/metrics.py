@@ -90,7 +90,7 @@ class BatchF1:
             ]
 
     def __str__(self):
-        return ",".join(f"{val:.2}" for val in self.get_value())
+        return ",".join(f"{val:.2f}" for val in self.get_value())
 
 
 def accuracy(probabilities, targets):

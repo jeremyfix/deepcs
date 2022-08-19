@@ -114,12 +114,14 @@ def train(
 
         # Display status
         if dynamic_display:
-            metrics_msg = ",".join(
-                f"{m_name}: {m_value/N:.4}" for (m_name, m_value) in tot_metrics.items()
+            metrics_msg = " | ".join(
+                f"{m_name}: {m_value/N:.4f}"
+                for (m_name, m_value) in tot_metrics.items()
             )
-            metrics_msg += ", "
-            metrics_msg += ",".join(
-                f"{bname}: {bm.get_value()}" for (bname, bm) in batch_metrics.items()
+            if len(batch_metrics) != 0:
+                metrics_msg += " | "
+            metrics_msg += " | ".join(
+                f"{bname}: {bm}" for (bname, bm) in batch_metrics.items()
             )
             progress_bar(i, len(loader), msg=metrics_msg)
 
@@ -139,13 +141,11 @@ def train(
     # And compute the value of the batch metrics
     for bname, bm in batch_metrics.items():
         tot_metrics[bname] = bm.get_value()
-    print(
-        "Train metrics :     {}".format(
-            " | ".join(
-                [f"{m_name}: {m_value}" for m_name, m_value in tot_metrics.items()]
-            )
-        )
+
+    metrics_msg = "\n  ".join(
+        f"{m_name}: {m_value}" for (m_name, m_value) in tot_metrics.items()
     )
+    print(f"Train metrics : \n  {metrics_msg}")
 
     return tot_metrics
 
