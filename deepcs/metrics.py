@@ -75,8 +75,16 @@ class BatchF1:
             self.tp += (preds * targets).sum()
             self.fp += (preds * (1 - targets)).sum()
             self.fn += ((1 - preds) * targets).sum()
-        elif len(predictions.shape) == 2:
-            # Multi class case
+        elif len(predictions.shape) >= 2:
+            # Multi class case, possibly multi-dimensions
+            if len(predictions.shape) > 2:
+                assert len(predictions.shape) == (len(targets.shape) + 1)
+                # predictions is expected to be (B, C, d1, d2, ..)
+                # targets is expected to be (B, d1, d2, ..)
+                B = targets.shape[0]
+                targets = targets.view(B, -1)
+                predictions = predictions.view(B, self.num_classes, -1)
+
             if self.tp is None:
                 self.num_classes = predictions.shape[1]
                 self.tp = [0 for k in range(self.num_classes)]
@@ -90,10 +98,6 @@ class BatchF1:
                 self.tp[k] += (preds_k * targs_k).sum().item()
                 self.fp[k] += (preds_k * (1.0 - targs_k)).sum().item()
                 self.fn[k] += ((1 - preds_k) * targs_k).sum().item()
-        else:
-            raise ValueError(
-                "Do not know how to handle predictions with more than 2 dimensions"
-            )
 
     def get_value(self):
         if self.num_classes == 2:
