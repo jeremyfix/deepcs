@@ -77,6 +77,12 @@ class BatchF1:
             self.fn += ((1 - preds) * targets).sum()
         elif len(predictions.shape) >= 2:
             # Multi class case, possibly multi-dimensions
+            if self.tp is None:
+                self.num_classes = predictions.shape[1]
+                self.tp = [0 for k in range(self.num_classes)]
+                self.fp = [0 for k in range(self.num_classes)]
+                self.fn = [0 for k in range(self.num_classes)]
+
             if len(predictions.shape) > 2:
                 assert len(predictions.shape) == (len(targets.shape) + 1)
                 # predictions is expected to be (B, C, d1, d2, ..)
@@ -84,12 +90,6 @@ class BatchF1:
                 B = targets.shape[0]
                 targets = targets.view(B, -1)
                 predictions = predictions.view(B, self.num_classes, -1)
-
-            if self.tp is None:
-                self.num_classes = predictions.shape[1]
-                self.tp = [0 for k in range(self.num_classes)]
-                self.fp = [0 for k in range(self.num_classes)]
-                self.fn = [0 for k in range(self.num_classes)]
 
             preds = predictions.argmax(axis=1)  # (B, )
             for k in range(self.num_classes):
