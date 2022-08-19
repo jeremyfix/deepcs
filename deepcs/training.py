@@ -113,10 +113,14 @@ def train(
         optimizer.step()
 
         # Display status
-        metrics_msg = ",".join(
-            f"{m_name}: {m_value/N:.4}" for (m_name, m_value) in tot_metrics.items()
-        )
         if dynamic_display:
+            metrics_msg = ",".join(
+                f"{m_name}: {m_value/N:.4}" for (m_name, m_value) in tot_metrics.items()
+            )
+            metrics_msg += ", "
+            metrics_msg += ",".join(
+                f"{bname}: {bm.get_value()}" for (bname, bm) in batch_metrics.items()
+            )
             progress_bar(i, len(loader), msg=metrics_msg)
 
         # Write the metrics on the tensorboard if one is provided
