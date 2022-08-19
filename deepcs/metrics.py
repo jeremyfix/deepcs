@@ -1,3 +1,4 @@
+import torch.nn as nn
 import torch.nn.utils.rnn
 
 
@@ -29,6 +30,17 @@ class GenericBatchMetric:
         if self.num_samples == 0:
             raise ZeroDivisionError
         return self.cum_metric / self.num_samples
+
+    def __str__(self):
+        return f"{self.get_value():.3f}"
+
+
+def BatchCE():
+    return GenericBatchMetric(nn.CrossEntropyLoss(reduction="mean"))
+
+
+def BatchAccuracy():
+    return GenericBatchMetric(accuracy)
 
 
 class BatchF1:
