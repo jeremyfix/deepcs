@@ -101,10 +101,16 @@ class BatchF1:
 
     def get_value(self):
         if self.num_classes == 2:
-            return self.tp / (self.tp + 0.5 * (self.fp + self.fn))
+            return (
+                self.tp / (self.tp + 0.5 * (self.fp + self.fn))
+                if self.tp != 0 or self.fp != 0 or self.fn != 0
+                else 1.0
+            )  # else there are either no samples or just TN
         else:
             return [
                 tp / (tp + 0.5 * (fp + fn))
+                if tp != 0 or fp != 0 or fn != 0
+                else 1.0  # else there are either no samples or just TN
                 for tp, fp, fn in zip(self.tp, self.fp, self.fn)
             ]
 
