@@ -1,11 +1,16 @@
 # coding: utf-8
 
+# Standard imports
 from typing import Any, Callable, Dict, List
 
+# External imports
 import torch
 import torch.nn
 import torch.utils.data
 import torch.optim
+
+# Local imports
+from .display import progress_bar
 
 
 Metric = Callable[[Any, Any], float]
@@ -17,6 +22,7 @@ def test(
     device: torch.device,
     metrics: Dict[str, Metric],
     num_model_args: int = 1,
+    dynamic_display: bool = True,
 ):
     """
     Test a model by iterating over the loader
@@ -66,6 +72,10 @@ def test(
             # Update the metrics
             for bname, bm in metrics.items():
                 bm(outputs, targets)
+
+            # Display status
+            if dynamic_display:
+                progress_bar(i, len(loader))
     # Compute the value of the batch metrics
     tot_metrics = {}
     for bname, bm in metrics.items():
