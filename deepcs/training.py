@@ -99,9 +99,10 @@ def train(
             gradnorm = torch.nn.utils.clip_grad_norm_(
                 model.parameters(), max_norm=grad_clip
             )
-            tensorboard_writer.add_scalar(
-                "grad/norm", gradnorm, num_epoch + (i + 1) / tot_epoch
-            )
+            if tensorboard_writer is not None:
+                tensorboard_writer.add_scalar(
+                    "grad/norm", gradnorm, num_epoch + (i + 1) / tot_epoch
+                )
 
         optimizer.step()
 
