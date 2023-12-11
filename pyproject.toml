@@ -1,0 +1,26 @@
+[project]
+name = "deepcs"
+version = "0.2.7"
+dependencies = [
+    "torch >= 1.5.0",
+    "torchinfo >= 0.0.9",
+    "torchvision >= 0.6" 
+]
+
+requires-python = ">= 3.8"
+authors = [
+{name: "Jeremy Fix", email="jeremy.fix@centralesupelec.fr" }
+]
+maintainers = [
+{name: "Jeremy Fix", email="jeremy.fix@centralesupelec.fr" }
+]
+description = "deepcs provides utilitary functions for the CentraleSupelec deeplearning lab works"
+readme = "README.md"
+license = {file = "LICENSE.txt"}
+keywords = ["deep learning", "CentraleSupelec"] 
+classifiers = 
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
