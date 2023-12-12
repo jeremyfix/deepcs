@@ -9,16 +9,15 @@ dependencies = [
 
 requires-python = ">= 3.8"
 authors = [
-{name: "Jeremy Fix", email="jeremy.fix@centralesupelec.fr" }
+{name= "Jeremy Fix", email="jeremy.fix@centralesupelec.fr" }
 ]
 maintainers = [
-{name: "Jeremy Fix", email="jeremy.fix@centralesupelec.fr" }
+{name= "Jeremy Fix", email="jeremy.fix@centralesupelec.fr" }
 ]
 description = "deepcs provides utilitary functions for the CentraleSupelec deeplearning lab works"
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 keywords = ["deep learning", "CentraleSupelec"] 
-classifiers = 
 
 classifiers = [
   "Development Status :: 4 - Beta",
