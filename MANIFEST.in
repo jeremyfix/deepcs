@@ -1,4 +1,1 @@
-include settings.ini
-include LICENSE.txt
 include License_CeCILL-C.txt
-include README.md
