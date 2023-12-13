@@ -18,6 +18,7 @@ from deepcs.training import train, ModelCheckpoint
 from deepcs.testing import test
 from deepcs.fileutils import generate_unique_logpath
 from deepcs.metrics import BatchAccuracy, BatchCE, BatchF1
+from deepcs.rng import seed_torch
 
 
 class LinearNet(nn.Module):
@@ -77,6 +78,10 @@ device = torch.device("cpu")
 logdir = generate_unique_logpath("./logs", "linear")
 print(f"Logging into {logdir}")
 
+seed = 12345
+print("Seeding for reproducibility")
+seed_torch(12345)
+
 # Datasets
 train_valid_dataset = torchvision.datasets.MNIST(
     root=dataset_dir,
@@ -131,7 +136,6 @@ model_checkpoint = ModelCheckpoint(model, os.path.join(logdir, "best_model.pt"))
 
 # Train
 for e in range(n_epochs):
-
     train(
         model,
         train_loader,
