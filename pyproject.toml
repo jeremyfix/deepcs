@@ -1,6 +1,6 @@
 [project]
 name = "deepcs"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
     "torch >= 1.5.0",
     "torchinfo >= 0.0.9",
