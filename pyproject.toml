@@ -1,6 +1,7 @@
 [project]
 name = "deepcs"
-version = "0.2.8"
+dynamic = ["version"]
+
 dependencies = [
     "torch >= 1.5.0",
     "torchinfo >= 0.0.9",
@@ -23,3 +24,6 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python"
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "deepcs.__version__"}
