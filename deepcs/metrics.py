@@ -111,9 +111,11 @@ class BatchF1:
             )  # else there are either no samples or just TN
         else:
             return [
-                tp / (tp + 0.5 * (fp + fn))
-                if tp != 0 or fp != 0 or fn != 0
-                else 1.0  # else there are either no samples or just TN
+                (
+                    tp / (tp + 0.5 * (fp + fn))
+                    if tp != 0 or fp != 0 or fn != 0
+                    else 1.0
+                )  # else there are either no samples or just TN
                 for tp, fp, fn in zip(self.tp, self.fp, self.fn)
             ]
 
@@ -129,6 +131,9 @@ class BatchF1:
 def accuracy(probabilities, targets):
     """
     Computes the accuracy. Works with either PackedSequence or Tensor
+    It expects probabilities to be of shape (B, K, *)
+    and targets to be of shape (B, *)
+    where * denotes any number of dimensions
     """
     with torch.no_grad():
         if isinstance(probabilities, torch.nn.utils.rnn.PackedSequence):
@@ -139,4 +144,4 @@ def accuracy(probabilities, targets):
             targ = targets.data
         else:
             targ = targets
-        return (probs.argmax(axis=-1) == targ).double().mean()
+        return (probs.argmax(axis=1) == targ).double().mean()
