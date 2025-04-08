@@ -22,10 +22,10 @@ class GenericBatchMetric:
         targets : (B, *)
         """
         # We suppose is batch averaged
-        if isinstance(targets, torch.nn.utils.rnn.PackedSequence):
-            B = targets.unsorted_indices.shape[0]
+        if isinstance(predictions, torch.nn.utils.rnn.PackedSequence):
+            B = predictions.unsorted_indices.shape[0]
         else:
-            B = targets.shape[0]
+            B = predictions.shape[0]
         self.cum_metric += B * self.metric(predictions, targets).item()
         self.num_samples += B
 
