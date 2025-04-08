@@ -64,7 +64,14 @@ def train(
 
     for i, (inputs, targets) in enumerate(loader):
 
-        inputs, targets = inputs.to(device), targets.to(device)
+        if isinstance(inputs, dict):
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+        else:
+            inputs = inputs.to(device)
+        if isinstance(targets, dict):
+            targets = {k: v.to(device) for k, v in targets.items()}
+        else:
+            targets = targets.to(device)
 
         # Compute the forward propagation
         if num_model_args == 1:
